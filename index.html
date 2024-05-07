@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WhatsApp Link Generator</title>
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <!-- intl-tel-input CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.12/css/intlTelInput.min.css">
+  <!-- QR Code Generator JS -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script> -->
+  <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+
+  <!-- Custom CSS -->
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+
+footer {
+    text-align: center;
+    background-color: #f0f0f0;
+    padding: 10px 0;
+    margin-top: auto; /* Push the footer to the bottom */
+}
+
+    .container {
+      background-color: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      margin-top: 50px;
+    }
+    .form-control {
+      border-radius: 5px;
+    }
+    .btn-primary {
+      background-color: #007bff;
+      border-color: #007bff;
+    }
+    .btn-primary:hover {
+      background-color: #0056b3;
+      border-color: #0056b3;
+    }
+    .generated-link-container {
+      margin-top: 20px;
+    }
+    #qrcode {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1 class="text-center mb-4">WhatsApp Link Generator</h1>
+  <div class="form-group">
+    <label for="phoneNumber">Phone Number  </label>
+    <input type="tel" class="form-control" id="phoneNumber" placeholder="Enter phone number">
+  </div>
+  <div class="form-group">
+    <label for="language">Language (Optional)</label>
+    <select class="form-control" id="language">
+        <option value="">Select Language</option>
+        <option value="en">English</option>
+        <option value="ar">Arabic</option>
+        <option value="hi">Hindi</option>
+        <option value="ur">Urdu</option>
+        <!-- Add more language options as needed -->
+    </select>
+  </div>
+  <div class="form-group">
+    <label for="appAbsent">App Absent? (Optional) </label>
+    <select class="form-control" id="appAbsent">
+      <option value="0">No</option>
+      <option value="1">Yes</option>
+    </select>
+    <small class="form-text text-muted">"app_absent=1" replaces the "Continue to Chat" button with "Download" button to allow users to download WhatsApp for the current OS.</small>
+  </div>
+  <div class="form-group">
+    <label for="message">Enter Message to send</label>
+    <textarea class="form-control" id="message" rows="3" placeholder="Enter your message"></textarea>
+  </div>
+  <div class="form-group">
+    <label for="whatsappOption">Open in</label>
+    <select class="form-control" id="whatsappOption">
+      <option value="app">WhatsApp App</option>
+      <option value="web">WhatsApp Web</option>
+    </select>
+  </div>
+  <button type="button" class="btn btn-primary btn-block" onclick="generateWhatsAppLink()">Generate Link</button>
+  <div class="generated-link-container" id="linkContainer" style="display: none;">
+    <label for="generatedLink">Generated Link</label>
+    <input type="text" class="form-control" id="generatedLink" readonly>
+    <!-- QR code will be displayed here -->
+   
+    <div class="mt-2 text-center">
+      <button class="btn btn-primary mr-2" onclick="copyToClipboard()"> Copy to Clipboard 📋 </button>
+      <button class="btn btn-success" onclick="openInWhatsApp()">Open in WhatsApp ↗️ </button>
+      <button class="btn btn-danger" onclick="clearQRCode()">Clear 🗑️</button>
+      <span id="qrcode" class="text-center"></span>
+
+    </div>
+  
+
+   
+</div>
+  </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<!-- intl-tel-input JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.12/js/intlTelInput.min.js"></script>
+<script>
+
+    
+  var input = document.querySelector("#phoneNumber");
+  var iti = window.intlTelInput(input, {
+    initialCountry: "auto",
+    separateDialCode: true,
+  });
+
+  function generateWhatsAppLink() {
+    var dialCode = iti.getSelectedCountryData().dialCode;
+    var phoneNumber = input.value.trim();
+    var language = document.getElementById('language').value.trim();
+    var message = encodeURIComponent(document.getElementById('message').value.trim());
+    var whatsappOption = document.getElementById('whatsappOption').value;
+    var appAbsent = document.getElementById('appAbsent').value;
+    
+    // Check if phone number and message are filled
+    if (phoneNumber && message) {
+      // If language is not optional, check if it's filled
+      if (language && language !== "") {
+        var link = `https://api.whatsapp.com/send?phone=${dialCode}${phoneNumber}&text=${message}&lang=${language}&app_absent=${appAbsent}`;
+      } else {
+        var link = `https://api.whatsapp.com/send?phone=${dialCode}${phoneNumber}&text=${message}&app_absent=${appAbsent}`;
+      }
+      // Append option to open in WhatsApp app or web
+      link += whatsappOption === 'app' ? '&source=mobile' : '';
+      document.getElementById('generatedLink').value = link;
+      document.getElementById('linkContainer').style.display = 'block';
+      generateQRCode(link);
+    } else {
+      alert('Please fill in all the required fields.');
+    }
+  }
+
+  function copyToClipboard() {
+    var linkInput = document.getElementById('generatedLink');
+    linkInput.select();
+    document.execCommand('copy');
+    alert('Link copied to clipboard!');
+  }
+function clearQRCode(){
+
+    document.getElementById('qrcode').innerHTML="";
+
+
+
+console.log("cleared QR Code");
+}
+  function openInWhatsApp() {
+    var link = document.getElementById('generatedLink').value;
+    window.open(link, '_blank');
+  }
+
+
+function generateQRCode(link) {
+  
+
+var qrcode = new QRCode(document.getElementById("qrcode"), {
+	text: link,
+	width: 110,
+	height: 110,
+	colorDark : "#5868bf",
+	colorLight : "#ffffff",
+	correctLevel : QRCode.CorrectLevel.H
+});}
+</script>
+
+</body>
+</html>
+
+<footer>
+        <p>⚡️ WhatsApp Link Generator / QR Code Generator by Ali Husain Sorathiya</p>
+    </footer>
